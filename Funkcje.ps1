@@ -396,10 +396,112 @@ WyslijPowiadomienie -NazwaKomputera "NazwaKomputera" -Uzytkownik "Jan.Kowalski" 
 
 
 
+#Rysunek 50. Wyszukiwanie danych w plikach .XML 
 
+# Przełącznik wyboru opcji
+switch ($Wybor) {
+    # Opcja 1: Pobranie nazwy autora i wyszukanie książek tego autora
+    1 {
+        # Pobranie nazwy autora od użytkownika
+        Write-Host "Proszę podanie autora:"
+        $Autor = Read-Host
 
+        # Wyszukanie książek o podanym autorze
+        $KsiazkiAutora = $Bazamal.catalog.book | Where-Object { $_.author -match $Autor }
 
+        # Sprawdzenie, czy znaleziono książki
+        if ($KsiazkiAutora.Count -gt 0) {
+            Write-Host "Znaleziono następujące książki:"
 
+            # Wyświetlenie listy znalezionych książek
+            foreach ($Ksiazka in $KsiazkiAutora) {
+                Write-Host "  - $($Ksiazka.title) - $($Ksiazka.author)"
+            }
+        } else {
+            Write-Host "Nie znaleziono książek o podanym autorze."
+        }
+    }
+
+    # Opcja 2: Pobranie nazwy książki i wyszukanie tej książki
+    2 {
+        # Pobranie nazwy książki od użytkownika
+        Write-Host "Proszę podanie nazwy książki:"
+        $Tytul = Read-Host
+
+        # Wyszukanie książki o podanym tytule
+        $KsiazkiTytulu = $Bazamal.catalog.book | Where-Object { $_.title -match $Tytul }
+
+        # Sprawdzenie, czy znaleziono książki
+        if ($KsiazkiTytulu.Count -gt 0) {
+            Write-Host "Znaleziono następujące książki:"
+
+            # Wyświetlenie listy znalezionych książek
+            foreach ($Ksiazka in $KsiazkiTytulu) {
+                Write-Host "  - $($Ksiazka.title) - $($Ksiazka.author)"
+            }
+        } else {
+            Write-Host "Nie znaleziono książki o podanym tytule."
+        }
+    }
+
+    # Opcja 3: Pobranie nazwy gatunku i wyszukanie książek tego gatunku
+    3 {
+        # Pobranie nazwy gatunku od użytkownika
+        Write-Host "Proszę podanie gatunku książki:"
+        $Gatunek = Read-Host
+
+        # Wyszukanie książek o podanym gatunku
+        $KsiazkiGatunku = $Bazamal.catalog.book | Where-Object { $_.genre -match $Gatunek }
+
+        # Sprawdzenie, czy znaleziono książki
+        if ($KsiazkiGatunku.Count -gt 0) {
+            Write-Host "Znaleziono następujące książki:"
+
+            # Wyświetlenie listy znalezionych książek
+            foreach ($Ksiazka in $KsiazkiGatunku) {
+                Write-Host "  - $($Ksiazka.title) - $($Ksiazka.author)"
+            }
+        } else {
+            Write-Host "Nie znaleziono książek o podanym gatunku."
+        }
+    }
+
+    # Opcja 4: Pobranie słów kluczowych i wyszukanie książek zawierających te słowa kluczowe w opisie
+    4 {
+        # Pobranie słów kluczowych od użytkownika
+        Write-Host "Proszę o podanie słów kluczowych do wyszukiwania w opisie:"
+        $SlowaKluczowe = Read-Host
+
+        # Wyszukanie książek zawierających podane słowa kluczowe w opisie
+        $KsiazkiOpisu = $Bazamal.catalog.book | Where-Object { $_.description -match $SlowaKluczowe }
+
+        # Sprawdzenie, czy znaleziono książki
+        if ($KsiazkiOpisu.Count -gt 0) {
+            Write-Host "Znaleziono następujące książki:"
+
+            # Wyświetlenie listy znalezionych książek
+            foreach ($Ksiazka in $KsiazkiOpisu) {
+                Write-Host "  - $($Ksiazka.title) - $($Ksiazka.author)"
+            }
+        } else {
+            Write-Host "Nie znaleziono książek zawierających podane słowa kluczowe w opisie."
+        }
+    }
+
+    5{
+        #wyjscie
+        break
+    }
+
+    default {
+        #blad
+        "niepoprawny wybor"
+    }
+
+}
+
+Pause
+}
 
 
 
