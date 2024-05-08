@@ -1,6 +1,25 @@
 
+#Rysunek 9. Przykład użycia komendy Read-Host do określenia zmiennej $folder. 
 
-#Rysunek 10. Funkcja globalna odpowiadająca za wyświetlanie błędów
+function wybor_folder {
+    Write-Host -ForegroundColor Cyan 'Wskaz folder instalatora'
+    Write-Host -ForegroundColor Cyan "Aktualnie jesteś w: $PSScriptRoot" 
+    $Script:folder = Read-Host
+}
+
+
+#Rysunek 17. Funkcja globalna odpowiadająca za wyświetlanie błędów
+
+function global:WyswietlenieBledu
+{
+    write-host "Wystąpił nieoczekiwany błąd" -foregroundColor Green 
+    write-host "Treść błędu: $PSItem" - foregroundColor red
+    pause
+}
+
+
+
+#Rysunek 18. Obsługa błędu try & catch wykorzystana w interfejsie.
 
 function global:WyswietlenieBledu
 {
@@ -31,100 +50,9 @@ do
 }
 
 
-#Rysunek 11. Obsługa błędu try & catch wykorzystana w interfejsie.
-
-function global:WyswietlenieBledu
-{
-    write-host "Wystąpił nieoczekiwany błąd" -foregroundColor Green 
-    write-host "Treść błędu: $PSItem" - foregroundColor red
-    pause
-}
-function pokaz_Menu
-{
-
-do
-{
-
-    pokaz_menu -tytul 'MENU'
-	try
-    {
-    catch [System.Management.Automation.RuntimeException]
-    {
-    Write-Host "Wybór nie jest liczbą. Proszę spróbować ponownie." -foregroundColor red
-	pause
-	}
-	catch
-	{
-	WyswietlenieBledu
-	}
-
-}until($wybor -eq '99')
-}
 
 
-
-#Rysunek 16. Kod źródłowy funkcji usuwania aplikacji
-
-function usuwanie_aplikacji {
-    $nazwakomputera = Read-Host "Podaj nazwę komputera"
-
-    try {
-        $registryPath = "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
-        $key = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, $nazwakomputera)
-        $subkeys = $key.OpenSubKey($registryPath).GetSubKeyNames()
-
-        if ($subkeys) {
-            Write-Host -ForegroundColor Cyan -BackgroundColor Black "`nLista aplikacji na komputerze $($nazwakomputera):"
-            $applications = @()
-            foreach ($subkey in $subkeys) {
-                $programName = $key.OpenSubKey("$registryPath\$subkey").GetValue("DisplayName")
-                if ($programName -ne $null) {
-                    $applications += $programName
-                    Write-Host -ForegroundColor Cyan -BackgroundColor Black $programName
-                }
-            }
-            $cochcesz = Read-Host "Podaj część nazwy aplikacji do usunięcia"
-            $foundApplications = $applications | Where-Object { $_ -like "*$cochcesz*" }
-            if ($foundApplications.Count -gt 0) {
-                Write-Host "Znalezione aplikacje:"
-                $foundApplications | ForEach-Object { Write-Host $_ }
-                $toRemove = Read-Host "Wybierz aplikację do usunięcia z powyższej listy"
-                $uninstallKey = $key.OpenSubKey($registryPath)            
-                $subkeyName = $uninstallKey.GetSubKeyNames() | Where-Object { $uninstallKey.OpenSubKey($_).GetValue("DisplayName") -eq $toRemove }
-                $uninstallString = $uninstallKey.OpenSubKey($subkeyName).GetValue("UninstallString")
-
-                if ($uninstallString) {
-                    Write-Host "Uninstall String: $uninstallString"
-                    $result = Invoke-Command -ComputerName $nazwakomputera -ScriptBlock {
-                        Start-Process -FilePath "$using:uninstallString" -ArgumentList "/quiet", "/norestart" -Wait
-                        return $?
-                    }
-                    if ($result) {
-                        Write-Host -ForegroundColor Cyan -BackgroundColor Black "`nAplikacja $toRemove została usunięta."
-                    } else {
-                        Write-Host -ForegroundColor Cyan -BackgroundColor Black "`nNie udało się usunąć aplikacji $toRemove."
-                    }
-                } else {
-                    Write-Host -ForegroundColor Cyan -BackgroundColor Black "`nNie udało się odnaleźć lub usunąć aplikacji $toRemove."
-                }
-            } else {
-                Write-Host -ForegroundColor Cyan -BackgroundColor Black "`nPodana część nazwy aplikacji nie znajduje się na liście."
-            }
-        } else {
-            Write-Host -ForegroundColor Cyan -BackgroundColor Black "`nNie można uzyskać listy aplikacji na komputerze $($nazwakomputera)."
-        }
-    } catch {
-        Write-Host -ForegroundColor Cyan -BackgroundColor Black "Wystąpił błąd podczas pobierania listy aplikacji."
-        Write-Host -ForegroundColor Cyan -BackgroundColor Black "Błąd: $_"
-    }
-}
-
-usuwanie_aplikacji
-
-
-
-
-#Rysunek 18. Kod źródłowy funkcji usuwania aktualizacji
+#Rysunek 22. Kod źródłowy funkcji usuwania aktualizacji
 function usuwanie_aktualizacji {
     param (
         [string]$nazwakomputera
@@ -161,83 +89,7 @@ function usuwanie_aktualizacji {
 
 
 
-#Rysunek 20. Funkcja kopiowania i instalacji w skrypcie Instalacji Oprogramowania
-
-function kopiowanie {
-    # Ustawienie ścieżek
-    $Script:sciezka = "\\NazwaKomputera\cs\temp\instalacja"
-    $Script:sciezka2 = "$sciezka\Sinstalator_nazwa"
-
-    # Sprawdzenie, czy folder istnieje
-    if (-not (Test-Path $sciezka)) {
-        # Komunikat o tworzeniu folderu
-        Write-Host -ForegroundColor cyan -BackgroundColor black "Tworzenie folderu $sciezka"
-
-        # Tworzenie folderu
-        New-Item -ItemType Directory -Force -Path $sciezka
-    }
-
-    # Kopiowanie pliku instalatora
-    Write-Host -ForegroundColor cyan -BackgroundColor black "Kopiowanie na $NazwaKomputera trwa..."
-    Copy-Item "Ścieżka_do_pliku_instalatora" -Destination $sciezka -Recurse
-
-    # Komunikat o zakończeniu kopiowania
-    Write-Host -ForegroundColor cyan -BackgroundColor black "Skopiowano plik Sinstalator_nazwa"
-
-    # Wyświetlenie listy plików w folderze
-    Get-ChildItem $sciezka
-}
-
-function instalacja {
-    param (
-        [string]$NazwaKomputera,
-        [string]$sciezka2
-    )
-
-    # Utworzenie nazwy logu
-    $log = "instalacja_$(((Get-Date).ToUniversalTime()).ToString("yyyyMMddhhmmss")).log"
-
-    # Komunikat o instalacji
-    Write-Host -ForegroundColor cyan -BackgroundColor black "Trwa instalacja Sinstalator_nazwa na $NazwaKomputera..."
-
-    # Odczekanie 5 sekund
-    Start-Sleep -Seconds 5
-
-    # Wywołanie skryptu na komputerze zdalnym
-    Invoke-Command -ComputerName $NazwaKomputera -ScriptBlock {
-        param($sciezka2, $log)
-
-        # Uruchamianie instalatora
-        Msiexec /i $sciezka2 /log $log
-
-        # Odczekanie 1 sekundy
-        Start-Sleep -Seconds 1
-
-        # Komunikat o zakończeniu instalacji
-        Write-Host -ForegroundColor cyan -BackgroundColor black "Zainstalowano Sinstalator_nazwa na $using:NazwaKomputera"
-
-        # Wyświetlenie pustej linii
-        Write-Host
-
-        # Komunikat o logu z instalacji
-        Write-Host "Log z instalacji:"
-
-        # Pobranie zawartości logu
-        $zawartoscLog = Get-Content $log
-
-        # Wyświetlenie zawartości logu
-        Write-Output $zawartoscLog
-    } -ArgumentList $sciezka2, $log
-}
-
-# Wywołanie funkcji kopiowania
-kopiowanie
-
-# Wywołanie funkcji instalacji
-instalacja -NazwaKomputera "NazwaKomputera"
-
-
-#Rysunek 19. Kod źródłowy funkcji globalnej – połączenie
+#Rysunek 23. Kod źródłowy funkcji globalnej – połączenie
 
 function global: polaczenie
 {
@@ -246,7 +98,9 @@ $global: Connection = Test-Connection $nazwakomputera -Count 1 -Quiet
 }
 
 
-#Rysunek 20. Funkcja kopiowania i instalacji w skrypcie Instalacji Oprogramowania
+
+
+#Rysunek 26. Funkcja kopiowania i instalacji w skrypcie Instalacji Oprogramowania
 function kopiowanie {
     # Ustawienie ścieżek
     $Script:sciezka = "\\NazwaKomputera\cs\temp\instalacja"
@@ -321,7 +175,11 @@ kopiowanie
 instalacja -NazwaKomputera "NazwaKomputera"
 
 
-#Rysunek 31. Funkcja usuwania uszkodzonego wpisu w rejestrze.
+
+
+
+
+#Rysunek 35. Funkcja usuwania uszkodzonego wpisu w rejestrze.
 Function CzyszczenieFelu($nazwaKomputera) {
     # Pobierz SID użytkownika
     $strSID = (Get-WmiObject Win32_UserProfile | Where-Object { $_.LocalPath.Split("\")[-1] -eq $env:USERNAME }).SID
@@ -354,7 +212,7 @@ CzyszczenieFelu "WIN-99DU8TMFIPN"
 
 
 
-#Rysunek 32. Kod źródłowy funkcji zmiany nazwy uszkodzonego folderu
+#Rysunek 36. Kod źródłowy funkcji zmiany nazwy uszkodzonego folderu
 if ($Connection -eq "True") {
     function czyszczenie {
         Wait-Host
@@ -400,65 +258,148 @@ if ($Connection -eq "True") {
 
 
 
-#Rysunek 36. Wykorzystanie polecenia manage-bde.exe
 
-# Zmień te wartości zgodnie z Twoim środowiskiem
-$NazwaKomputera = "NazwaKomputera"
-$HasloAdministratora = "HasloAdministratora"
 
-# Sprawdzenie dostępności komputera
-if (Test-Connection -ComputerName $NazwaKomputera -ErrorAction Stop) {
-    Write-Host "Komputer $NazwaKomputera jest dostępny."
-} else {
-    Write-Host "Komputer $NazwaKomputera jest niedostępny."
-    Exit
-}
+#Rysunek 40 Ta funkcja restartuje ustawienia TPM na podanym komputerze.
+function Restart-TPM {
 
-# Wyłączenie ochrony TPM
-$WynikWyłączenia = Invoke-Command -ComputerName $NazwaKomputera -ScriptBlock {
-    try {
-        Clear-Tpm -Force
-        $Wynik = "Wyłączono ochronę TPM."
-    } catch {
-        $Wynik = $_.Exception.Message
+    # Pobierz nazwę komputera
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [String]
+        $NazwaKomputera
+    )
+
+    # Pobierz stan szyfrowania
+    $StanSzyfrowania = Invoke-Command -ComputerName $NazwaKomputera -ScriptBlock {
+        & cmd.exe /c "manage-bde.exe -status"
     }
-    $Wynik
-}
 
-if ($WynikWyłączenia -match "Wyłączono ochronę TPM.") {
-    Write-Host "Ochrona TPM została wyłączona na komputerze $NazwaKomputera."
-} else {
-    Write-Host "Wystąpił błąd podczas wyłączania ochrony TPM na komputerze $NazwaKomputera:"
-    Write-Host $WynikWyłączenia
-    Exit
-}
-
-# Restart komputera
-Invoke-Command -ComputerName $NazwaKomputera -ScriptBlock {
-    Restart-Computer
-}
-
-# Włączenie ochrony TPM
-Start-Sleep -Seconds 60
-
-$WynikWłączenia = Invoke-Command -ComputerName $NazwaKomputera -ScriptBlock {
-    try {
-        Enable-Tpm -Force
-        $Wynik = "Włączono ochronę TPM."
-    } catch {
-        $Wynik = $_.Exception.Message
+    # Wyłącz ochronę TPM
+    if ($StanSzyfrowania.Contains('BitLocker jest włączony')) {
+        Invoke-Command -ComputerName $NazwaKomputera -ScriptBlock {
+            & cmd.exe /c "manage-bde.exe -protectors -disable C:"
+        }
     }
-    $Wynik
+
+    # Uruchom ponownie komputer
+    Restart-Computer -ComputerName $NazwaKomputera
+
+    # Odczekaj 1 sekundę
+    Start-Sleep -Seconds 1
+
+    # Włącz ochronę TPM
+    if ($StanSzyfrowania.Contains('BitLocker jest włączony')) {
+        Invoke-Command -ComputerName $NazwaKomputera -ScriptBlock {
+            & cmd.exe /c "manage-bde.exe -protectors -enable C:"
+        }
+    }
+
+    # Wyświetl komunikat o powodzeniu
+    Write-Host "Wykonano restart ustawień TPM dla $NazwaKomputera"
+
 }
 
-if ($WynikWłączenia -match "Włączono ochronę TPM.") {
-    Write-Host "Ochrona TPM została włączona na komputerze $NazwaKomputera."
-} else {
-    Write-Host "Wystąpił błąd podczas włączania ochrony TPM na komputerze $NazwaKomputera:"
-    Write-Host $WynikWłączenia
+# Wywołaj funkcję dla przykładowego komputera
+Restart-TPM -NazwaKomputera "NazwaKomputera"
+
+
+
+
+
+
+
+
+
+
+
+#Rysunek 48. Funkcja wysyłania wiadomości e-mail
+# Ta funkcja wysyła wiadomość e-mail z informacją o komputerze, który nie odpowiada w sieci.
+
+function WyslijPowiadomienie {
+
+    # Pobierz parametry
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [String]
+        $NazwaKomputera,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [String]
+        $Uzytkownik,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [String]
+        $Skog,
+
+        [Parameter(Mandatory=$false)]
+        [ValidateNotNullOrEmpty()]
+        [String]
+        $Sprzełożony
+    )
+
+    # Ustaw parametry serwera SMTP
+    $SEmailServer = "setphub.eur.mail.com"
+
+    # Pobierz nazwę użytkownika
+    $Sfrom = (Get-Netuser $Uzytkownik -DomainName "Nazwaboneny" | Select-Object -Property "SamAccountName").SamAccountName
+
+    # Utwórz wiadomość e-mail
+    $Semail = $Sfrom -replace "sazważytkownika", $Uzytkownik
+
+    $Semail2 = "Automatyczne powiadomienie z $NazwaKomputera"
+    $Semail3 = $Semail2 + "@firma.com"
+
+    # Ustaw styl wiadomości
+    $Styl = "margin: 10px; font-family: Calibri; font-size: 12pt; color: black; padding-left: 10px;"
+
+    # Ustaw temat wiadomości
+    $Temat = "Urządzenie $NazwaKomputera nie odpowiada w sieci"
+
+    # Utwórz treść wiadomości
+    $Tresc = @"
+<p style="$Styl"><strong>Otrzymalismy informacje, że urządzenie $NazwaKomputera nie odpowiada w sieci od dłuższego czasu.</strong></p>
+<p style="$Styl">&nbsp;</p>
+<p style="$Styl">W związku z powyższym, prosimy o sprawdzenie urządzenia i podjęcie odpowiednich kroków w celu rozwiązania problemu.</p>
+"@
+
+    # Ustaw parametry wysyłania wiadomości
+    $MailParams = @{
+        From = $Semail
+        To = $Skog
+        Subject = $Temat
+        Body = $Tresc
+        SmtpServer = $SEmailServer
+        BodyEncoding = [System.Text.UTF8Encoding]::UTF8
+        Credential = (Get-Credential "lal")
+    }
+
+    # Wyślij wiadomość e-mail
+    Send-MailMessage @MailParams -encoding UTF8 -Bcc $Semail3 -Cc "do.kogo.co@firma.com, $Sprzełożony"
+
+    # Wyświetl komunikat o powodzeniu
+    Write-Host "E-mail został wysłany"
+
 }
 
-# Komunikat końcowy
-Write-Host "Wykonano restart ustawień TPM dla $NazwaKomputera."
+# Wywołaj funkcję dla przykładowego komputera
+WyslijPowiadomienie -NazwaKomputera "NazwaKomputera" -Uzytkownik "Jan.Kowalski" -Skog "jan.kowalski@firms.com" -Sprzełożony "jan.kowalski@firma.com"
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
